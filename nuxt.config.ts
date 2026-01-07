@@ -1,3 +1,4 @@
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 import z3 from 'z3-solver/package.json';
 
 export default defineNuxtConfig({
@@ -39,6 +40,19 @@ export default defineNuxtConfig({
 
   devServer: {
     port: 9308,
+  },
+
+  vite: {
+    plugins: [
+      viteStaticCopy({
+        targets: [
+          {
+            src: 'node_modules/z3-solver/build/z3-built.js',
+            dest: '',
+          },
+        ],
+      }),
+    ],
   },
 
   fonts: {
