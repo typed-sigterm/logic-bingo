@@ -12,7 +12,7 @@ export default defineNuxtConfig({
       htmlAttrs: { lang: 'zh-CN' },
       title: 'Logic Bingo',
       script: [
-        { src: `https://registry.npmmirror.com/z3-solver/${z3.version}/files/build/z3-built.js` },
+        { src: '/z3-built.js' },
       ],
       noscript: [
         { innerHTML: 'Please enable JavaScript to view this website.' },
@@ -31,6 +31,9 @@ export default defineNuxtConfig({
         'Cross-Origin-Embedder-Policy': 'require-corp',
         'Cross-Origin-Opener-Policy': 'same-origin',
       },
+    },
+    '/z3-built.js': {
+      redirect: `https://registry.npmmirror.com/z3-solver/${z3.version}/files/build/z3-built.js`,
     },
     '/z3-built.wasm': {
       redirect: `https://registry.npmmirror.com/z3-solver/${z3.version}/files/build/z3-built.wasm`,
