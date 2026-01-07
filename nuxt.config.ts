@@ -12,7 +12,7 @@ export default defineNuxtConfig({
       htmlAttrs: { lang: 'zh-CN' },
       title: 'Logic Bingo',
       script: [
-        { src: '/z3-built.js' },
+        { src: `https://registry.npmmirror.com/z3-solver/${z3.version}/files/build/z3-built.js` },
       ],
       noscript: [
         { innerHTML: 'Please enable JavaScript to view this website.' },
