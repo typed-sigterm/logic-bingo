@@ -1,3 +1,5 @@
+import { copyFile } from 'node:fs/promises';
+import path from 'node:path';
 import z3 from 'z3-solver/package.json';
 
 export default defineNuxtConfig({
@@ -32,9 +34,6 @@ export default defineNuxtConfig({
         'Cross-Origin-Opener-Policy': 'same-origin',
       },
     },
-    '/z3-built.js': {
-      redirect: `https://registry.npmmirror.com/z3-solver/${z3.version}/files/build/z3-built.js`,
-    },
     '/z3-built.wasm': {
       redirect: `https://registry.npmmirror.com/z3-solver/${z3.version}/files/build/z3-built.wasm`,
     },
@@ -42,6 +41,15 @@ export default defineNuxtConfig({
 
   devServer: {
     port: 9308,
+  },
+
+  hooks: {
+    'nitro:build:public-assets': async (nitro) => {
+      copyFile(
+        path.resolve(import.meta.dirname, 'node_modules/z3-solver/build/z3-built.js'),
+        path.resolve(nitro.options.output.publicDir, 'z3-built.js'),
+      );
+    },
   },
 
   fonts: {
