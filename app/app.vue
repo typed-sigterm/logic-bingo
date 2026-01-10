@@ -1,9 +1,10 @@
 <script setup lang="ts">
-// import type { NavigationMenuItem } from '@nuxt/ui';
+import type { NavigationMenuItem } from '@nuxt/ui';
 
-// const HeaderItems: NavigationMenuItem[] = [
-//   { label: '演示', to: '/' },
-// ];
+const HeaderItems: NavigationMenuItem[] = [
+  { label: '求解', icon: 'lucide:play', to: '/solve' },
+  { label: '验证', icon: 'lucide:laptop-minimal-check', to: '/verify' },
+];
 </script>
 
 <template>
@@ -13,7 +14,7 @@
         Logic Bingo
       </template>
 
-      <!-- UNavigationMenu :items="HeaderItems" / -->
+      <UNavigationMenu :items="HeaderItems" />
 
       <template #right>
         <UColorModeButton />
@@ -27,6 +28,10 @@
             aria-label="GitHub"
           />
         </UTooltip>
+      </template>
+
+      <template #body>
+        <UNavigationMenu :items="HeaderItems" orientation="vertical" class="-mx-2.5 text-center" />
       </template>
     </UHeader>
 
