@@ -12,6 +12,9 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'zh-CN' },
+      meta: [
+        { name: 'referrer', content: 'no-referrer' },
+      ],
       title: 'Logic Bingo',
       script: [
         { src: '/z3-built.js' },
