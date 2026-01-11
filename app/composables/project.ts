@@ -1,4 +1,4 @@
-import DefaultProject from '~/assets/default-project.lbc?arraybuffer';
+import DefaultProject from '~/assets/default-project.lbc?arraybuffer&base64';
 
 export function useProject() {
   const project = useState<Project | undefined>('project');

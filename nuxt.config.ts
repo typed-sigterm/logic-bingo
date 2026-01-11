@@ -38,6 +38,9 @@ export default defineNuxtConfig({
         'Cross-Origin-Opener-Policy': 'same-origin',
       },
     },
+    '/': {
+      redirect: '/solve',
+    },
     '/z3-built.wasm': {
       redirect: `https://registry.npmmirror.com/z3-solver/${z3.version}/files/build/z3-built.wasm`,
     },
