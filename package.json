@@ -11,6 +11,7 @@
     "@iconify-json/lucide": "^1.2.82",
     "@iconify-json/simple-icons": "^1.2.65",
     "@nuxt/ui": "^4.3.0",
+    "canvas-confetti": "^1.9.4",
     "nuxt": "^4.2.2",
     "vue": "^3.5.26",
     "vue-router": "^4.6.4",
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^6.7.3",
     "@typed-sigterm/eslint-config": "^1.6.1",
+    "@types/canvas-confetti": "^1.9.0",
     "eslint": "^9.39.2",
     "vite": "npm:rolldown-vite@^7.3.0"
   }

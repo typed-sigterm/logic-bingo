@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { Bool } from 'z3-solver';
-import type { Project } from '~/utils/game';
 
 const toast = useToast();
 const { z3, status, error: e } = useZ3();
+const { project, resetProject } = useProject();
+
 watch(e, (x) => {
   console.error('Z3 Load Error:', x);
   toast.add({
@@ -18,47 +19,24 @@ const solutions = ref<boolean[][][]>([]);
 const solving = ref(false);
 const finished = ref(false);
 const error = ref<string>();
-const project = ref<Project>();
-const uploadedFile = ref<File>();
 const timeUsed = ref<number>(0);
 
-watch(uploadedFile, async (file) => {
-  if (!file)
-    return;
-
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const loadedProject = await deserializeProject(arrayBuffer);
-    project.value = loadedProject;
-    solutions.value = [];
-    finished.value = false;
-    error.value = undefined;
-  } catch (err) {
-    console.error('Failed to load project:', err);
-    error.value = `文件加载失败：${String(err)}`;
-    toast.add({
-      title: '文件加载失败',
-      description: String(err),
-      icon: 'lucide:circle-x',
-      color: 'error',
-      duration: 5000,
-    });
-  }
+watch(project, () => {
+  solutions.value = [];
+  finished.value = false;
+  error.value = undefined;
 });
 
-async function runSolver() {
-  if (!z3.value || status.value !== 'success')
-    return;
+function handleReset() {
+  resetProject();
+  solutions.value = [];
+  finished.value = false;
+  error.value = undefined;
+}
 
-  if (!project.value) {
-    toast.add({
-      title: '请先选择文件',
-      icon: 'lucide:circle-x',
-      color: 'error',
-      duration: 3000,
-    });
+async function runSolver() {
+  if (!z3.value || status.value !== 'success' || !project.value)
     return;
-  }
 
   solving.value = true;
   solutions.value = [];
@@ -116,56 +94,10 @@ async function runSolver() {
 
 <template>
   <UContainer class="py-8">
-    <UFileUpload
-      v-if="!project"
-      v-model="uploadedFile"
-      class="max-w-2xl mx-auto min-h-64"
-      accept=".lbc"
-      label="选择或拖拽文件到此处"
-      description="支持 .lbc 格式文件"
-      size="xl"
-    />
+    <ProjectUploader v-if="!project" />
 
     <div v-else class="space-y-8">
-      <UCard>
-        <template #header>
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-lg font-bold">
-                问题描述
-              </h2>
-              <p class="text-sm text-gray-500 mt-1">
-                {{ project.width }}×{{ project.height }} 网格约束
-              </p>
-            </div>
-            <UButton
-              color="neutral"
-              variant="ghost"
-              icon="i-heroicons-arrow-path"
-              @click="uploadedFile = project = undefined; solutions = []; finished = false;"
-            >
-              重新选择
-            </UButton>
-          </div>
-        </template>
-
-        <div class="overflow-x-auto">
-          <div
-            class="grid gap-3"
-            :style="{ gridTemplateColumns: `repeat(${project.width}, minmax(120px, 1fr))` }"
-          >
-            <template v-for="(row, r) in project.labels" :key="r">
-              <div
-                v-for="(desc, c) in row"
-                :key="`${r}-${c}`"
-                class="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 flex items-center justify-center text-center min-h-28 hover:border-primary-400 dark:hover:border-primary-600 transition-colors text-sm"
-              >
-                {{ desc }}
-              </div>
-            </template>
-          </div>
-        </div>
-      </UCard>
+      <ProjectInfo :project="project" @reset="handleReset" />
 
       <div class="flex items-center justify-center gap-4">
         <UButton
@@ -198,10 +130,18 @@ async function runSolver() {
       />
 
       <div v-if="solutions.length > 0">
-        <div class="mb-6 flex items-center justify-between">
+        <div class="mb-6 space-y-3">
           <h2 class="text-lg font-bold">
             在 {{ timeUsed }}s 内找到 {{ solutions.length }} 个解
           </h2>
+          <UAlert
+            v-if="solutions.length === 20"
+            icon="i-heroicons-information-circle"
+            title="已截断"
+            description="为避免长时间运行，最多显示 20 个解。可能还有更多解存在。"
+            color="primary"
+            variant="soft"
+          />
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

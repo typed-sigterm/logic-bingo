@@ -7,6 +7,7 @@
         "@iconify-json/lucide": "^1.2.82",
         "@iconify-json/simple-icons": "^1.2.65",
         "@nuxt/ui": "^4.3.0",
+        "canvas-confetti": "^1.9.4",
         "nuxt": "^4.2.2",
         "vue": "^3.5.26",
         "vue-router": "^4.6.4",
@@ -16,6 +17,7 @@
       "devDependencies": {
         "@antfu/eslint-config": "^6.7.3",
         "@typed-sigterm/eslint-config": "^1.6.1",
+        "@types/canvas-confetti": "^1.9.0",
         "eslint": "^9.39.2",
         "vite": "npm:rolldown-vite@^7.3.0",
       },
@@ -638,6 +640,8 @@
 
     "@typed-sigterm/eslint-config": ["@typed-sigterm/eslint-config@1.6.1", "https://registry.npmmirror.com/@typed-sigterm/eslint-config/-/eslint-config-1.6.1.tgz", { "dependencies": { "eslint-plugin-autocorrect": "^0.3.0" }, "peerDependencies": { "@antfu/eslint-config": ">= 4.0.0" } }, "sha512-khaPsNkWCc/0zo4QfgI3mqg4cdECHlWeisEH8HlhSwpcsZjRPc4Gb/DCOMUKqY29Ksu96hnMoCm8rpoLAkrVgg=="],
 
+    "@types/canvas-confetti": ["@types/canvas-confetti@1.9.0", "https://registry.npmmirror.com/@types/canvas-confetti/-/canvas-confetti-1.9.0.tgz", {}, "sha512-aBGj/dULrimR1XDZLtG9JwxX1b4HPRF6CX9Yfwh3NvstZEm1ZL7RBnel4keCPSqs1ANRu1u2Aoz9R+VmtjYuTg=="],
+
     "@types/debug": ["@types/debug@4.1.12", "https://registry.npmmirror.com/@types/debug/-/debug-4.1.12.tgz", { "dependencies": { "@types/ms": "*" } }, "sha512-vIChWdVG3LG1SMxEvI/AK+FWJthlrqlTu7fbrlywTkkaONwk/UAGaULXRlf8vkzFBLVm0zkMdCquhL5aOjhXPQ=="],
 
     "@types/estree": ["@types/estree@1.0.8", "https://registry.npmmirror.com/@types/estree/-/estree-1.0.8.tgz", {}, "sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w=="],
@@ -843,6 +847,8 @@
     "caniuse-api": ["caniuse-api@3.0.0", "https://registry.npmmirror.com/caniuse-api/-/caniuse-api-3.0.0.tgz", { "dependencies": { "browserslist": "^4.0.0", "caniuse-lite": "^1.0.0", "lodash.memoize": "^4.1.2", "lodash.uniq": "^4.5.0" } }, "sha512-bsTwuIg/BZZK/vreVTYYbSWoe2F+71P7K5QGEX+pT250DZbfU1MQ5prOKpPR+LL6uWKK3KMwMCAS74QB3Um1uw=="],
 
     "caniuse-lite": ["caniuse-lite@1.0.30001762", "https://registry.npmmirror.com/caniuse-lite/-/caniuse-lite-1.0.30001762.tgz", {}, "sha512-PxZwGNvH7Ak8WX5iXzoK1KPZttBXNPuaOvI2ZYU7NrlM+d9Ov+TUvlLOBNGzVXAntMSMMlJPd+jY6ovrVjSmUw=="],
+
+    "canvas-confetti": ["canvas-confetti@1.9.4", "https://registry.npmmirror.com/canvas-confetti/-/canvas-confetti-1.9.4.tgz", {}, "sha512-yxQbJkAVrFXWNbTUjPqjF7G+g6pDotOUHGbkZq2NELZUMDpiJ85rIEazVb8GTaAptNW2miJAXbs1BtioA251Pw=="],
 
     "ccount": ["ccount@2.0.1", "https://registry.npmmirror.com/ccount/-/ccount-2.0.1.tgz", {}, "sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg=="],
 
