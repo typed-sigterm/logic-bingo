@@ -1,5 +1,6 @@
 import { copyFile } from 'node:fs/promises';
 import path from 'node:path';
+import viteArrayBuffer from 'vite-plugin-arraybuffer';
 import z3 from 'z3-solver/package.json';
 
 export default defineNuxtConfig({
@@ -53,6 +54,12 @@ export default defineNuxtConfig({
         path.resolve(nitro.options.output.publicDir, 'z3-built.js'),
       );
     },
+  },
+
+  vite: {
+    plugins: [
+      viteArrayBuffer(),
+    ],
   },
 
   fonts: {

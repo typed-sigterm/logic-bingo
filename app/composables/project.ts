@@ -1,4 +1,4 @@
-import type { Project } from '~/utils/game';
+import DefaultProject from '~/assets/default-project.lbc?arraybuffer';
 
 export function useProject() {
   const project = useState<Project | undefined>('project');
@@ -6,26 +6,7 @@ export function useProject() {
   const error = useState<string | undefined>('project-error');
 
   async function loadDefaultProject() {
-    if (project.value)
-      return; // Already loaded
-
-    isLoading.value = true;
-    error.value = undefined;
-
-    try {
-      const response = await fetch('/logic_bingo.lbc');
-      if (!response.ok)
-        throw new Error('Failed to fetch default project file');
-
-      const arrayBuffer = await response.arrayBuffer();
-      const loadedProject = await deserializeProject(arrayBuffer);
-      project.value = loadedProject;
-    } catch (err) {
-      console.error('Failed to load default project:', err);
-      error.value = `加载默认文件失败：${String(err)}`;
-    } finally {
-      isLoading.value = false;
-    }
+    project.value = await deserializeProject(DefaultProject);
   }
 
   async function loadProjectFromFile(file: File) {
