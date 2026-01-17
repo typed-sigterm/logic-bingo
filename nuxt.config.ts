@@ -1,5 +1,6 @@
-import { copyFile } from 'node:fs/promises';
+import { copyFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { defineEventHandler } from 'h3';
 import viteArrayBuffer from 'vite-plugin-arraybuffer';
 import z3 from 'z3-solver/package.json';
 
@@ -62,6 +63,22 @@ export default defineNuxtConfig({
   vite: {
     plugins: [
       viteArrayBuffer(),
+    ],
+  },
+
+  nitro: {
+    devHandlers: [
+      { // https://github.com/nitrojs/nitro/issues/2749
+        route: '/z3-built.js',
+        handler: defineEventHandler(async (ev) => {
+          const id = path.resolve(import.meta.dirname, 'node_modules/z3-solver/build/z3-built.js');
+          ev.respondWith(
+            new Response(await readFile(id), {
+              headers: { 'Content-Type': 'application/javascript' },
+            }),
+          );
+        }),
+      },
     ],
   },
 
