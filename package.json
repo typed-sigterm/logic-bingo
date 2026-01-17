@@ -4,8 +4,7 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "preview": "nuxt preview"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.85",
@@ -23,7 +22,15 @@
     "@typed-sigterm/eslint-config": "^1.6.1",
     "@types/canvas-confetti": "^1.9.0",
     "eslint": "^9.39.2",
-    "vite": "npm:rolldown-vite@^7.3.1",
     "vite-plugin-arraybuffer": "^0.1.1"
+  },
+  "overrides": {
+    "vite": "npm:rolldown-vite@^7.3.1"
+  },
+  "trustedDependencies": [
+    "@parcel/watcher"
+  ],
+  "patchedDependencies": {
+    "vite-plugin-arraybuffer@0.1.1": "patches/vite-plugin-arraybuffer@0.1.1.patch"
   }
 }
