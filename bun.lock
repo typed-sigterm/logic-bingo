@@ -19,16 +19,13 @@
         "@typed-sigterm/eslint-config": "^1.6.1",
         "@types/canvas-confetti": "^1.9.0",
         "eslint": "^9.39.2",
-        "vite-plugin-arraybuffer": "^0.1.1",
+        "vite-plugin-arraybuffer": "^0.1.2",
       },
     },
   },
   "trustedDependencies": [
     "@parcel/watcher",
   ],
-  "patchedDependencies": {
-    "vite-plugin-arraybuffer@0.1.1": "patches/vite-plugin-arraybuffer@0.1.1.patch",
-  },
   "overrides": {
     "vite": "npm:rolldown-vite@^7.3.1",
   },
@@ -2039,7 +2036,7 @@
 
     "vite-node": ["vite-node@5.3.0", "https://registry.npmmirror.com/vite-node/-/vite-node-5.3.0.tgz", { "dependencies": { "cac": "^6.7.14", "es-module-lexer": "^2.0.0", "obug": "^2.1.1", "pathe": "^2.0.3", "vite": "^7.3.1" }, "bin": { "vite-node": "dist/cli.mjs" } }, "sha512-8f20COPYJujc3OKPX6OuyBy3ZIv2det4eRRU4GY1y2MjbeGSUmPjedxg1b72KnTagCofwvZ65ThzjxDW2AtQFQ=="],
 
-    "vite-plugin-arraybuffer": ["vite-plugin-arraybuffer@0.1.1", "https://registry.npmmirror.com/vite-plugin-arraybuffer/-/vite-plugin-arraybuffer-0.1.1.tgz", {}, "sha512-j66GVZ695+k5aB/+exTXujYGiW7EfAFchV1Bp27c9JL3Dg+611T8oL9yuCX5zFcgQPCjTy/APijOjaizR/vyGw=="],
+    "vite-plugin-arraybuffer": ["vite-plugin-arraybuffer@0.1.2", "https://registry.npmmirror.com/vite-plugin-arraybuffer/-/vite-plugin-arraybuffer-0.1.2.tgz", {}, "sha512-KQLgCTnKJE25blJLvW8smUzhuTQyfcX1+aFqkTRKXpeMeqt6tX/AOGngdBd80oc6o0RX7bEsdaF48EQGXOIPWA=="],
 
     "vite-plugin-checker": ["vite-plugin-checker@0.12.0", "https://registry.npmmirror.com/vite-plugin-checker/-/vite-plugin-checker-0.12.0.tgz", { "dependencies": { "@babel/code-frame": "^7.27.1", "chokidar": "^4.0.3", "npm-run-path": "^6.0.0", "picocolors": "^1.1.1", "picomatch": "^4.0.3", "tiny-invariant": "^1.3.3", "tinyglobby": "^0.2.15", "vscode-uri": "^3.1.0" }, "peerDependencies": { "@biomejs/biome": ">=1.7", "eslint": ">=9.39.1", "meow": "^13.2.0", "optionator": "^0.9.4", "oxlint": ">=1", "stylelint": ">=16", "typescript": "*", "vite": ">=5.4.21", "vls": "*", "vti": "*", "vue-tsc": "~2.2.10 || ^3.0.0" }, "optionalPeers": ["@biomejs/biome", "eslint", "meow", "optionator", "oxlint", "stylelint", "typescript", "vls", "vti", "vue-tsc"] }, "sha512-CmdZdDOGss7kdQwv73UyVgLPv0FVYe5czAgnmRX2oKljgEvSrODGuClaV3PDR2+3ou7N/OKGauDDBjy2MB07Rg=="],
 
