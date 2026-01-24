@@ -67,6 +67,7 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    preset: 'netlify',
     devHandlers: [
       { // https://github.com/nitrojs/nitro/issues/2749
         route: '/z3-built.js',
