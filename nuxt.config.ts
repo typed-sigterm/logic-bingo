@@ -64,12 +64,6 @@ export default defineNuxtConfig({
     plugins: [
       viteArrayBuffer(),
     ],
-    hmr: {
-      overlay: false,
-    },
-    define: {
-      __VUE_PROD_DEVTOOLS__: true,
-    },
   },
 
   nitro: {
