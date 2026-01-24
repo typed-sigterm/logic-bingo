@@ -39,5 +39,14 @@ const HeaderItems: NavigationMenuItem[] = [
     <UMain class="flex flex-col">
       <NuxtPage />
     </UMain>
+
+    <UFooter>
+      <p class="text-muted text-sm">
+        Copyright © 2026-present
+        <ULink href="https://typed-sigterm.me/?logic-bingo.by-ts.top&utm_medium=footer" target="_blank">
+          Typed SIGTERM
+        </ULink>
+      </p>
+    </UFooter>
   </UApp>
 </template>
