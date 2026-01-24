@@ -1,9 +1,9 @@
 import DefaultProject from '~/assets/default-project.lbc?arraybuffer&base64';
 
 export function useProject() {
-  const project = useState<Project | undefined>('project');
-  const isLoading = useState('project-loading', () => false);
-  const error = useState<string | undefined>('project-error');
+  const project = useState<Project | undefined>();
+  const isLoading = useState(() => false);
+  const error = useState<string | undefined>();
 
   const loadDefaultProject = async () => {
     project.value = await deserializeProject(DefaultProject);
@@ -18,7 +18,7 @@ export function useProject() {
       const loadedProject = await deserializeProject(arrayBuffer);
       project.value = loadedProject;
     } catch (err) {
-      console.error('Failed to load project from file:', err);
+      console.error('文件加载失败', err);
       error.value = `文件加载失败：${String(err)}`;
       throw err;
     } finally {

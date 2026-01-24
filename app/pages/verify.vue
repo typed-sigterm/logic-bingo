@@ -12,26 +12,28 @@ watch(z3Error, (x) => {
   showErrorToast(toast, '求解模块加载失败，请检查网络连接', x);
 });
 
-const userGrid = refManualReset<boolean[][]>([]);
 let ctx: Context | undefined;
 let solver: Solver | undefined;
+
+const userGrid = refManualReset<boolean[][]>(() => {
+  if (project.value) {
+    return Array.from(
+      { length: project.value.height },
+      () => Array.from({ length: project.value!.width }, () => false),
+    );
+  }
+  return [];
+});
 
 watch(project, () => {
   try {
     if (ctx)
       z3.value?.Z3.del_context(ctx.ptr);
-    solver = ctx = undefined;
   } catch (err) {
-    console.warn('Error cleaning up Z3 context:', err);
-    ctx = undefined;
+    showErrorToast(toast, '析构求解器失败', err);
   }
-
-  if (project.value) {
-    userGrid.value = Array.from(
-      { length: project.value.height },
-      () => Array.from({ length: project.value!.width }, () => false),
-    );
-  }
+  solver = ctx = undefined;
+  userGrid.reset();
 });
 
 function checkBingo(): boolean {

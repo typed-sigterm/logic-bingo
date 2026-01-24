@@ -27,15 +27,13 @@ let solveStartTime = 0;
 
 watch(project, () => {
   try {
-    board = [];
     if (ctx)
       z3.value?.Z3.del_context(ctx.ptr);
-    solver = ctx = undefined;
   } catch (err) {
-    console.warn('Error cleaning up Z3 context:', err);
-    ctx = undefined;
+    showErrorToast(toast, '析构求解器失败', err);
   }
-
+  solver = ctx = undefined;
+  board = [];
   solutions.reset();
   displayIndex.reset();
   status.reset();
