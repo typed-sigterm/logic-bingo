@@ -1,39 +1,45 @@
 <script setup lang="ts">
-import type { Bool } from 'z3-solver';
+import type { Bool, Context, Solver } from 'z3-solver';
+import { refManualReset } from '@vueuse/core';
 
 const toast = useToast();
-const { z3, status, error: e } = useZ3();
+const { data: z3, status: z3Status, error: z3Error } = useZ3();
 const { project, resetProject } = useProject();
 
-watch(e, (x) => {
-  console.error('Z3 Load Error:', x);
-  toast.add({
-    title: '求解模块加载失败，请检查网络连接',
-    icon: 'lucide:circle-x',
-    color: 'error',
-    duration: 5000,
-  });
+watch(z3Error, (x) => {
+  console.error(x);
+  showErrorToast(toast, '求解模块加载失败，请检查网络连接', x);
 });
 
-const userGrid = ref<boolean[][]>([]);
-const verifying = ref(false);
-const verificationResult = ref<{
+const userGrid = refManualReset<boolean[][]>([]);
+const checkResult = refManualReset<{
   valid: boolean
   message: string
-}>();
+} | undefined>(undefined);
+const error = refManualReset<string | undefined>(undefined);
+let ctx: Context | undefined;
+let solver: Solver | undefined;
 
 const { confetti } = useConfetti();
 
-watch(project, (x) => {
-  if (x) {
-    userGrid.value = Array.from({ length: x.height }, () =>
-      Array.from({ length: x.width }, () => false));
-    verificationResult.value = undefined;
-  } else {
-    userGrid.value = [];
-    verificationResult.value = undefined;
+watch(project, () => {
+  try {
+    if (ctx)
+      z3.value?.Z3.del_context(ctx.ptr);
+    solver = ctx = undefined;
+  } catch (err) {
+    console.warn('Error cleaning up Z3 context:', err);
+    ctx = undefined;
   }
-}, { immediate: true });
+
+  if (project.value) {
+    userGrid.value = Array.from({ length: project.value.height }, () =>
+      Array.from({ length: project.value!.width }, () => false));
+  }
+
+  checkResult.reset();
+  error.reset();
+});
 
 function checkBingo(): boolean {
   if (!project.value)
@@ -77,34 +83,16 @@ function checkBingo(): boolean {
   return false;
 }
 
-async function verifyAnswer() {
-  if (!z3.value || status.value !== 'success' || !project.value)
-    return;
-
-  verifying.value = true;
-  verificationResult.value = undefined;
+async function initializeSolver(): Promise<boolean> {
+  if (!z3.value || z3Status.value !== 'success' || !project.value)
+    return false;
 
   try {
-    if (!checkBingo()) {
-      verificationResult.value = {
-        valid: false,
-        message: '未达成连线',
-      };
-      toast.add({
-        title: '未达成连线',
-        description: '请先标记一条完整的行、列或对角线',
-        icon: 'lucide:circle-x',
-        color: 'error',
-        duration: 5000,
-      });
-      return;
-    }
-
     const { Context } = z3.value;
-    const ctx = Context('main');
+    ctx = Context('main');
     const { Solver, Bool } = ctx;
 
-    const solver = new Solver();
+    solver = new Solver();
     const board: Bool[][] = [];
 
     for (let i = 0; i < project.value.height; i++) {
@@ -116,20 +104,75 @@ async function verifyAnswer() {
 
     solver.fromString(project.value.smtlib);
     solver.add(getBingoConstraint(ctx, project.value.width, project.value.height, board));
+    return true;
+  } catch (err) {
+    console.error('Solver initialization failed:', err);
+    error.value = String(err);
+    return false;
+  }
+}
+
+async function performVerification(): Promise<boolean> {
+  if (!solver || !ctx || !project.value)
+    return false;
+
+  try {
+    const board: Bool[][] = [];
+    for (let i = 0; i < project.value.height; i++) {
+      const rowArr = [];
+      for (let j = 0; j < project.value.width; j++)
+        rowArr.push(ctx!.Bool.const(`@${i}_${j}`));
+      board.push(rowArr);
+    }
 
     for (let i = 0; i < project.value.height; i++) {
       for (let j = 0; j < project.value.width; j++) {
         if (userGrid.value[i]![j])
           solver.add(board[i]![j]!);
         else
-          solver.add(ctx.Not(board[i]![j]!));
+          solver.add(ctx!.Not(board[i]![j]!));
       }
     }
 
     const result = await solver.check();
+    return result === 'sat';
+  } catch (err) {
+    console.error('Verification error:', err);
+    error.value = String(err);
+    return false;
+  }
+}
 
-    if (result === 'sat') {
-      verificationResult.value = {
+async function verifyAnswer() {
+  if (!z3.value || z3Status.value !== 'success' || !project.value)
+    return;
+
+  checkResult.value = undefined;
+  error.value = undefined;
+
+  try {
+    if (!checkBingo()) {
+      checkResult.value = {
+        valid: false,
+        message: '未达成连线',
+      };
+      showErrorToast(toast, '未达成连线', '请先标记一条完整的行、列或对角线');
+      return;
+    }
+
+    const initialized = await initializeSolver();
+    if (!initialized) {
+      checkResult.value = {
+        valid: false,
+        message: error.value || '初始化求解器失败',
+      };
+      return;
+    }
+
+    const isValid = await performVerification();
+
+    if (isValid) {
+      checkResult.value = {
         valid: true,
         message: '恭喜！你的答案正确且满足所有约束条件！',
       };
@@ -142,44 +185,21 @@ async function verifyAnswer() {
       });
       confetti();
     } else {
-      verificationResult.value = {
+      checkResult.value = {
         valid: false,
         message: '你的答案不满足约束条件，请重新尝试。',
       };
-      toast.add({
-        title: '验证失败',
-        description: '你的答案不满足约束条件',
-        icon: 'lucide:circle-x',
-        color: 'error',
-        duration: 5000,
-      });
+      showErrorToast(toast, '验证失败', '答案不满足约束条件');
     }
   } catch (err) {
-    console.error('Verification error:', err);
-    verificationResult.value = {
+    console.error('Error in verifyAnswer:', err);
+    error.value = String(err);
+    checkResult.value = {
       valid: false,
       message: `验证过程出错：${String(err)}`,
     };
-    toast.add({
-      title: '验证错误',
-      description: String(err),
-      icon: 'lucide:circle-x',
-      color: 'error',
-      duration: 5000,
-    });
-  } finally {
-    verifying.value = false;
+    showErrorToast(toast, '发生错误', err);
   }
-}
-
-function clearGrid() {
-  if (!project.value)
-    return;
-  userGrid.value = Array.from(
-    { length: project.value.height },
-    () => Array.from({ length: project.value!.width }, () => false),
-  );
-  verificationResult.value = undefined;
 }
 </script>
 
@@ -188,55 +208,24 @@ function clearGrid() {
     <ProjectUploader v-if="!project" />
 
     <div v-else class="space-y-8">
-      <ProjectInfo :project="project" @reset="resetProject" />
-
-      <UCard>
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h2 class="text-lg font-bold">
-              你的答案
-            </h2>
-            <UButton
-              color="neutral"
-              variant="ghost"
-              icon="i-heroicons-arrow-path"
-              @click="clearGrid"
-            >
-              清空
-            </UButton>
-          </div>
-        </template>
-
-        <div class="flex flex-col items-center gap-6">
-          <InteractiveGrid
-            v-model="userGrid"
-            :width="project.width"
-            :height="project.height"
-          />
-
-          <div class="flex gap-4">
-            <UButton
-              :loading="verifying"
-              :disabled="status !== 'success' || !project"
-              color="primary"
-              size="xl"
-              icon="lucide:check"
-              @click="verifyAnswer"
-            >
-              验证答案
-            </UButton>
-          </div>
-        </div>
-      </UCard>
-
-      <UAlert
-        v-if="verificationResult"
-        :icon="verificationResult.valid ? 'i-heroicons-check-circle' : 'i-heroicons-x-circle'"
-        :title="verificationResult.valid ? '验证通过' : '验证失败'"
-        :description="verificationResult.message"
-        :color="verificationResult.valid ? 'success' : 'error'"
-        variant="soft"
+      <ProjectInfo
+        v-model="userGrid"
+        :project="project"
+        interactive
+        @reset="resetProject"
       />
+
+      <div class="flex flex-col items-center gap-6">
+        <UButton
+          :disabled="z3Status !== 'success' || !project"
+          color="primary"
+          size="xl"
+          icon="lucide:grid-2x2-check"
+          @click="verifyAnswer"
+        >
+          验证答案
+        </UButton>
+      </div>
     </div>
   </UContainer>
 </template>

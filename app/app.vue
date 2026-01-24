@@ -3,7 +3,7 @@ import type { NavigationMenuItem } from '@nuxt/ui';
 
 const HeaderItems: NavigationMenuItem[] = [
   { label: '求解', icon: 'lucide:play', to: '/solve' },
-  { label: '验证', icon: 'lucide:laptop-minimal-check', to: '/verify' },
+  { label: '验证', icon: 'lucide:grid-2x2-check', to: '/verify' },
 ];
 </script>
 
@@ -24,7 +24,7 @@ const HeaderItems: NavigationMenuItem[] = [
             variant="ghost"
             to="https://github.com/typed-sigterm/logic-bingo"
             target="_blank"
-            icon="i-simple-icons-github"
+            icon="simple-icons:github"
             aria-label="GitHub"
           />
         </UTooltip>

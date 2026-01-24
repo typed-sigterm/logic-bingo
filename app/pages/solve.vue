@@ -1,56 +1,59 @@
 <script setup lang="ts">
-import type { Bool } from 'z3-solver';
+import type { Bool, Context, Solver } from 'z3-solver';
+import { refManualReset } from '@vueuse/core';
+
+if (import.meta.hot)
+  import.meta.hot.accept();
 
 const toast = useToast();
-const { z3, status, error: e } = useZ3();
+const { data: z3, status: z3Status, error: z3Error } = useZ3();
 const { project, resetProject } = useProject();
 
-watch(e, (x) => {
-  console.error('Z3 Load Error:', x);
-  toast.add({
-    title: '求解模块加载失败，请检查网络连接',
-    icon: 'lucide:circle-x',
-    color: 'error',
-    duration: 5000,
-  });
+watch(z3Error, (x) => {
+  console.error(x);
+  showErrorToast(toast, '求解模块加载失败，请检查网络连接', x);
 });
 
-const solutions = ref<boolean[][][]>([]);
-const solving = ref(false);
-const finished = ref(false);
-const error = ref<string>();
-const timeUsed = ref<number>(0);
+const solutions = refManualReset<boolean[][][]>([]);
+const status = refManualReset<'idle' | 'init-solving' | 'append-solving' | 'has-solution' | 'no-solution' | 'error'>('idle');
+const error = refManualReset<string | undefined>(undefined);
+const timeUsed = refManualReset<number>(0);
+const displayIndex = refManualReset<number>(0);
+const allSolutionsFetched = refManualReset<boolean>(false);
+let solver: Solver | undefined;
+let ctx: Context | undefined;
+let board: Bool[][] = [];
+let solveStartTime = 0;
 
 watch(project, () => {
-  solutions.value = [];
-  finished.value = false;
-  error.value = undefined;
+  try {
+    board = [];
+    if (ctx)
+      z3.value?.Z3.del_context(ctx.ptr);
+    solver = ctx = undefined;
+  } catch (err) {
+    console.warn('Error cleaning up Z3 context:', err);
+    ctx = undefined;
+  }
+
+  solutions.reset();
+  displayIndex.reset();
+  status.reset();
+  error.reset();
+  allSolutionsFetched.reset();
 });
 
-function handleReset() {
-  resetProject();
-  solutions.value = [];
-  finished.value = false;
-  error.value = undefined;
-}
-
-async function runSolver() {
-  if (!z3.value || status.value !== 'success' || !project.value)
-    return;
-
-  solving.value = true;
-  solutions.value = [];
-  finished.value = false;
-  error.value = undefined;
-  const startTime = performance.now();
+async function initializeSolver() {
+  if (!z3.value || z3Status.value !== 'success' || !project.value)
+    return false;
 
   try {
     const { Context } = z3.value;
-    const ctx = Context('main');
-    const { Solver, Bool, Or, Not } = ctx;
+    ctx = Context('main');
+    const { Solver, Bool } = ctx;
 
-    const solver = new Solver();
-    const board: Bool[][] = [];
+    solver = new Solver();
+    board = [];
 
     for (let i = 0; i < project.value.height; i++) {
       const rowArr = [];
@@ -61,16 +64,30 @@ async function runSolver() {
 
     solver.fromString(project.value.smtlib);
     solver.add(getBingoConstraint(ctx, project.value.width, project.value.height, board));
+    return true;
+  } catch (err) {
+    console.error('Solver initialization failed:', err);
+    error.value = String(err);
+    return false;
+  }
+}
 
-    let safety = 20;
-    while ((await solver.check()) === 'sat' && safety-- > 0) {
+async function fetchNextSolution(): Promise<boolean> {
+  if (!solver || !ctx || !board || !project.value)
+    return false;
+
+  try {
+    const { Or, Not } = ctx;
+    const checkResult = await solver.check();
+
+    if (checkResult === 'sat') {
       const model = solver.model();
       const grid: boolean[][] = [];
-      const block: any[] = [];
+      const block: Bool[] = [];
 
-      for (let i = 0; i < project.value.height; i++) {
+      for (let i = 0; i < project.value!.height; i++) {
         const rowRes: boolean[] = [];
-        for (let j = 0; j < project.value.width; j++) {
+        for (let j = 0; j < project.value!.width; j++) {
           const cellVal = model.eval(board[i]![j]!).toString() === 'true';
           rowRes.push(cellVal);
           block.push(cellVal ? Not(board[i]![j]!) : board[i]![j]!);
@@ -79,30 +96,95 @@ async function runSolver() {
       }
       solutions.value.push(grid);
       solver.add(Or(...block));
+      return true;
+    } else {
+      allSolutionsFetched.value = true;
+      return false;
     }
-    timeUsed.value = Math.round(performance.now() - startTime) / 1000;
-  } catch (e) {
-    console.error(e);
-    error.value = String(e);
-    solving.value = false;
-  } finally {
-    solving.value = false;
-    finished.value = true;
+  } catch (err) {
+    console.error('Error fetching next solution:', err);
+    error.value = String(err);
+    return false;
   }
 }
+
+async function runSolver() {
+  if (!z3.value || z3Status.value !== 'success' || !project.value)
+    return;
+
+  status.value = 'init-solving';
+  solutions.value = [];
+  displayIndex.value = 0;
+  error.value = undefined;
+  allSolutionsFetched.value = false;
+  solveStartTime = performance.now();
+
+  try {
+    const initialized = await initializeSolver();
+    if (!initialized) {
+      status.value = 'error';
+      return;
+    }
+
+    // Ensure `allSolutionsFetched` is accurate initially
+    await fetchNextSolution();
+    await fetchNextSolution();
+
+    displayIndex.value = Math.max(0, solutions.value.length - 2);
+    timeUsed.value = Math.round(performance.now() - solveStartTime) / 1000;
+    status.value = solutions.value.length > 0 ? 'has-solution' : 'no-solution';
+  } catch (err) {
+    console.error('Error in runSolver:', err);
+    error.value = String(err);
+    status.value = 'error';
+  }
+}
+
+async function handleNextClick() {
+  if (status.value === 'init-solving' || status.value === 'append-solving' || !solver)
+    return;
+
+  if (displayIndex.value < solutions.value.length - 1) {
+    displayIndex.value += 1;
+    return;
+  }
+
+  if ((status.value === 'has-solution' || status.value === 'no-solution') && !allSolutionsFetched.value && solutions.value.length >= 1) {
+    status.value = 'append-solving';
+    try {
+      const hasSolution = await fetchNextSolution();
+      timeUsed.value = Math.round(performance.now() - solveStartTime) / 1000;
+
+      if (hasSolution) {
+        displayIndex.value += 1;
+      } else {
+        status.value = 'has-solution';
+      }
+    } catch (err) {
+      console.error('Error fetching next solution:', err);
+      error.value = String(err);
+      status.value = 'error';
+    }
+  }
+}
+
+const displayedSolution = computed(() => {
+  return solutions.value[displayIndex.value];
+});
 </script>
 
 <template>
   <UContainer class="py-8">
     <ProjectUploader v-if="!project" />
 
-    <div v-else class="space-y-8">
-      <ProjectInfo :project="project" @reset="handleReset" />
+    <template v-else>
+      <ProjectInfo :project="project" @reset="resetProject" />
 
-      <div class="flex items-center justify-center gap-4">
+      <div class="flex flex-col items-center justify-center gap-4 mt-8">
         <UButton
-          :loading="solving"
-          :disabled="status !== 'success' || !project"
+          v-if="status === 'idle' || status === 'init-solving'"
+          :loading="status === 'init-solving'"
+          :disabled="z3Status !== 'success' || !project"
           color="primary"
           size="xl"
           icon="lucide:play"
@@ -110,11 +192,31 @@ async function runSolver() {
         >
           开始求解
         </UButton>
+        <UFieldGroup v-else>
+          <UButton
+            v-if="displayIndex > 0"
+            color="neutral"
+            variant="outline"
+            leading-icon="lucide:chevron-left"
+            @click="displayIndex = Math.max(0, displayIndex - 1)"
+          >
+            上一个
+          </UButton>
+          <UButton
+            v-if="displayIndex < solutions.length - 1 || ((status === 'has-solution' || status === 'no-solution') && !allSolutionsFetched && solutions.length >= 1)"
+            :loading="status === 'append-solving'"
+            color="primary"
+            trailing-icon="lucide:chevron-right"
+            @click="handleNextClick"
+          >
+            {{ status === 'append-solving' ? '求解中...' : '下一个' }}
+          </UButton>
+        </UFieldGroup>
       </div>
 
       <UAlert
-        v-if="error"
-        icon="i-heroicons-exclamation-triangle"
+        v-if="status === 'error' && error"
+        icon="lucide:circle-alert"
         title="错误"
         :description="error"
         color="error"
@@ -122,39 +224,25 @@ async function runSolver() {
       />
 
       <UEmpty
-        v-if="finished && solutions.length === 0"
+        v-if="status === 'no-solution'"
         class="w-100 mx-auto"
         title="当前约束条件下没有找到解"
         icon="lucide:ghost"
         size="xl"
       />
 
-      <div v-if="solutions.length > 0">
-        <div class="mb-6 space-y-3">
-          <h2 class="text-lg font-bold">
-            在 {{ timeUsed }}s 内找到 {{ solutions.length }} 个解
-          </h2>
-          <UAlert
-            v-if="solutions.length === 20"
-            icon="i-heroicons-information-circle"
-            title="已截断"
-            description="为避免长时间运行，最多显示 20 个解。可能还有更多解存在。"
-            color="primary"
-            variant="soft"
-          />
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          <UCard v-for="(item, i) in solutions" :key="i">
+      <div v-if="status === 'has-solution' && solutions.length > 0" class="space-y-6">
+        <div class="space-y-4 flex flex-col items-center">
+          <UCard :ui="{ header: 'font-semibold' }" class="w-full lg:w-auto lg:max-w-fit">
             <template #header>
-              <span>Solution #{{ i + 1 }}</span>
+              {{ solutions.length === 1 ? '唯一的解' : `解 #${displayIndex + 1}` }}
             </template>
             <div class="flex justify-center">
               <div
                 class="grid gap-0.5 bg-gray-200 dark:bg-gray-800 p-0.5 rounded"
                 :style="{ gridTemplateColumns: `repeat(${project?.width || 5}, minmax(0, 1fr))` }"
               >
-                <template v-for="(row, r) in item" :key="r">
+                <template v-for="(row, r) in displayedSolution" :key="r">
                   <div
                     v-for="(cell, c) in row"
                     :key="`${r}-${c}`"
@@ -171,6 +259,6 @@ async function runSolver() {
           </UCard>
         </div>
       </div>
-    </div>
+    </template>
   </UContainer>
 </template>

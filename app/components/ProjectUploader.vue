@@ -3,10 +3,7 @@ const toast = useToast();
 const { loadProjectFromFile, loadDefaultProject, isLoading } = useProject();
 const uploadedFile = ref<File>();
 
-// Load default project on mount
-onMounted(() => {
-  loadDefaultProject();
-});
+callOnce(() => loadDefaultProject());
 
 watch(uploadedFile, async (file) => {
   if (!file)
@@ -14,14 +11,8 @@ watch(uploadedFile, async (file) => {
 
   try {
     await loadProjectFromFile(file);
-  } catch (err) {
-    toast.add({
-      title: '文件加载失败',
-      description: String(err),
-      icon: 'lucide:circle-x',
-      color: 'error',
-      duration: 5000,
-    });
+  } catch (e) {
+    showErrorToast(toast, '文件加载失败', e);
   }
 });
 </script>
@@ -39,7 +30,14 @@ watch(uploadedFile, async (file) => {
     />
 
     <p class="text-center text-sm text-gray-500 dark:text-gray-400">
-      或使用默认示例文件（已自动加载）
+      或使用
+      <UButton
+        class="p-0 cursor-pointer"
+        variant="link"
+        @click="loadDefaultProject"
+      >
+        示例文件
+      </UButton>
     </p>
   </div>
 </template>

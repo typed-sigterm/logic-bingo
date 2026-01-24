@@ -5,11 +5,11 @@ export function useProject() {
   const isLoading = useState('project-loading', () => false);
   const error = useState<string | undefined>('project-error');
 
-  async function loadDefaultProject() {
+  const loadDefaultProject = async () => {
     project.value = await deserializeProject(DefaultProject);
-  }
+  };
 
-  async function loadProjectFromFile(file: File) {
+  const loadProjectFromFile = async (file: File) => {
     isLoading.value = true;
     error.value = undefined;
 
@@ -24,12 +24,12 @@ export function useProject() {
     } finally {
       isLoading.value = false;
     }
-  }
+  };
 
-  function resetProject() {
+  const resetProject = () => {
     project.value = undefined;
     error.value = undefined;
-  }
+  };
 
   return {
     project,
