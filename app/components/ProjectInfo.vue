@@ -19,35 +19,54 @@ function toggleCell(row: number, col: number) {
   grid.value = newGrid;
   emit('toggle', row, col);
 }
+
+function handleClearGrid() {
+  grid.value = Array.from(
+    { length: project.height },
+    () => Array.from({ length: project.width }, () => false),
+  );
+}
 </script>
 
 <template>
   <UCard>
     <template #header>
-      <div class="flex items-center justify-between">
-        <div>
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex-1 min-w-0">
           <h2 class="text-lg font-bold">
-            {{ interactive ? '你的答案' : '问题描述' }}
+            {{ interactive ? '点击格子，完成作答' : '问题描述' }}
           </h2>
           <p class="text-sm text-gray-500 mt-1">
-            {{ project.width }}×{{ project.height }} 网格约束
+            选中至少一行、列或对角线上的所有格子，并满足 {{ project.width }}×{{ project.height }} 网格约束
           </p>
         </div>
-        <UButton
-          color="neutral"
-          variant="ghost"
-          icon="lucide:refresh-cw"
-          @click="emit('reset')"
-        >
-          {{ interactive ? '清空' : '重新选择' }}
-        </UButton>
+
+        <div class="flex gap-2 shrink-0">
+          <UButton
+            v-if="interactive"
+            color="neutral"
+            variant="ghost"
+            icon="lucide:trash-2"
+            @click="handleClearGrid"
+          >
+            清空
+          </UButton>
+          <UButton
+            color="neutral"
+            variant="ghost"
+            icon="lucide:refresh-cw"
+            @click="emit('reset')"
+          >
+            重新选择
+          </UButton>
+        </div>
       </div>
     </template>
 
     <div class="overflow-x-auto">
       <div
         class="grid gap-3"
-        :style="{ gridTemplateColumns: `repeat(${project.width}, minmax(${interactive ? '80px' : '120px'}, 1fr))` }"
+        :style="{ gridTemplateColumns: `repeat(${project.width}, minmax(7rem, 1fr))` }"
       >
         <template v-for="(row, r) in project.labels" :key="r">
           <div
@@ -58,7 +77,7 @@ function toggleCell(row: number, col: number) {
               interactive
                 ? 'cursor-pointer hover:border-primary-400 dark:hover:border-primary-600'
                 : 'hover:border-primary-400 dark:hover:border-primary-600',
-              grid && interactive && grid[r]?.[c]
+              grid && interactive && grid[r]![c]
                 ? 'bg-primary-400 dark:bg-primary-400 text-white dark:text-white'
                 : '',
             ]"
