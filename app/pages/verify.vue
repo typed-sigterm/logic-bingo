@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Bool, Context, Solver } from 'z3-solver';
 import { refManualReset } from '@vueuse/core';
+import confetti from 'canvas-confetti';
 
 const toast = useToast();
 const { data: z3, status: z3Status, error: z3Error } = useZ3();
@@ -12,15 +13,8 @@ watch(z3Error, (x) => {
 });
 
 const userGrid = refManualReset<boolean[][]>([]);
-const checkResult = refManualReset<{
-  valid: boolean
-  message: string
-} | undefined>(undefined);
-const error = refManualReset<string | undefined>(undefined);
 let ctx: Context | undefined;
 let solver: Solver | undefined;
-
-const { confetti } = useConfetti();
 
 watch(project, () => {
   try {
@@ -33,25 +27,24 @@ watch(project, () => {
   }
 
   if (project.value) {
-    userGrid.value = Array.from({ length: project.value.height }, () =>
-      Array.from({ length: project.value!.width }, () => false));
+    userGrid.value = Array.from(
+      { length: project.value.height },
+      () => Array.from({ length: project.value!.width }, () => false),
+    );
   }
-
-  checkResult.reset();
-  error.reset();
 });
 
 function checkBingo(): boolean {
   if (!project.value)
     return false;
 
-  // Check rows
+  // 行
   for (let i = 0; i < project.value.height; i++) {
     if (userGrid.value[i]?.every(cell => cell))
       return true;
   }
 
-  // Check columns
+  // 列
   for (let j = 0; j < project.value.width; j++) {
     let allTrue = true;
     for (let i = 0; i < project.value.height; i++) {
@@ -64,7 +57,7 @@ function checkBingo(): boolean {
       return true;
   }
 
-  // Check diagonals (if square)
+  // 对角线
   if (project.value.width === project.value.height) {
     let mainDiagAllTrue = true;
     let antiDiagAllTrue = true;
@@ -83,7 +76,7 @@ function checkBingo(): boolean {
   return false;
 }
 
-async function initializeSolver(): Promise<boolean> {
+async function initSolver() {
   if (!z3.value || z3Status.value !== 'success' || !project.value)
     return false;
 
@@ -106,13 +99,13 @@ async function initializeSolver(): Promise<boolean> {
     solver.add(getBingoConstraint(ctx, project.value.width, project.value.height, board));
     return true;
   } catch (err) {
-    console.error('Solver initialization failed:', err);
-    error.value = String(err);
+    console.error(err);
+    showErrorToast(toast, '验证失败', err);
     return false;
   }
 }
 
-async function performVerification(): Promise<boolean> {
+async function performVerification() {
   if (!solver || !ctx || !project.value)
     return false;
 
@@ -127,18 +120,17 @@ async function performVerification(): Promise<boolean> {
 
     for (let i = 0; i < project.value.height; i++) {
       for (let j = 0; j < project.value.width; j++) {
-        if (userGrid.value[i]![j])
+        if (userGrid.value[i]?.[j])
           solver.add(board[i]![j]!);
         else
           solver.add(ctx!.Not(board[i]![j]!));
       }
     }
 
-    const result = await solver.check();
-    return result === 'sat';
+    return await solver.check() === 'sat';
   } catch (err) {
-    console.error('Verification error:', err);
-    error.value = String(err);
+    console.error(err);
+    showErrorToast(toast, '验证失败', err);
     return false;
   }
 }
@@ -147,57 +139,29 @@ async function verifyAnswer() {
   if (!z3.value || z3Status.value !== 'success' || !project.value)
     return;
 
-  checkResult.value = undefined;
-  error.value = undefined;
-
   try {
     if (!checkBingo()) {
-      checkResult.value = {
-        valid: false,
-        message: '未达成连线',
-      };
       showErrorToast(toast, '未达成连线', '请先标记一条完整的行、列或对角线');
       return;
     }
 
-    const initialized = await initializeSolver();
-    if (!initialized) {
-      checkResult.value = {
-        valid: false,
-        message: error.value || '初始化求解器失败',
-      };
+    if (!await initSolver())
       return;
-    }
 
-    const isValid = await performVerification();
-
-    if (isValid) {
-      checkResult.value = {
-        valid: true,
-        message: '恭喜！你的答案正确且满足所有约束条件！',
-      };
+    if (await performVerification()) {
       toast.add({
         title: '验证通过',
-        description: '你的答案正确！',
+        description: '你的答案成功连线，同时满足了所有约束！',
         icon: 'lucide:check-circle',
         color: 'success',
         duration: 5000,
       });
       confetti();
     } else {
-      checkResult.value = {
-        valid: false,
-        message: '你的答案不满足约束条件，请重新尝试。',
-      };
       showErrorToast(toast, '验证失败', '答案不满足约束条件');
     }
   } catch (err) {
-    console.error('Error in verifyAnswer:', err);
-    error.value = String(err);
-    checkResult.value = {
-      valid: false,
-      message: `验证过程出错：${String(err)}`,
-    };
+    console.error(err);
     showErrorToast(toast, '发生错误', err);
   }
 }
@@ -210,7 +174,7 @@ async function verifyAnswer() {
     <div v-else class="space-y-8">
       <ProjectInfo
         v-model="userGrid"
-        :project="project"
+        :project
         interactive
         @reset="resetProject"
       />

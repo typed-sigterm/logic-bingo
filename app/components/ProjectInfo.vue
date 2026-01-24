@@ -58,7 +58,7 @@ function toggleCell(row: number, col: number) {
               interactive
                 ? 'cursor-pointer hover:border-primary-400 dark:hover:border-primary-600'
                 : 'hover:border-primary-400 dark:hover:border-primary-600',
-              grid && interactive && grid[r]![c]
+              grid && interactive && grid[r]?.[c]
                 ? 'bg-primary-400 dark:bg-primary-400 text-white dark:text-white'
                 : '',
             ]"

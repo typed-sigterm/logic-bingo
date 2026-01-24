@@ -90,4 +90,10 @@ export default defineNuxtConfig({
       googleicons: false,
     },
   },
+
+  icon: {
+    clientBundle: {
+      scan: true,
+    },
+  },
 });

@@ -15,7 +15,7 @@ watch(z3Error, (x) => {
 });
 
 const solutions = refManualReset<boolean[][][]>([]);
-const status = refManualReset<'idle' | 'init-solving' | 'append-solving' | 'has-solution' | 'no-solution' | 'error'>('idle');
+const status = refManualReset<'idle' | 'init-solving' | 'append-solving' | 'has-solution' | 'no-solution'>('idle');
 const error = refManualReset<string | undefined>(undefined);
 const timeUsed = refManualReset<number>(0);
 const displayIndex = refManualReset<number>(0);
@@ -43,7 +43,7 @@ watch(project, () => {
   allSolutionsFetched.reset();
 });
 
-async function initializeSolver() {
+async function initSolver() {
   if (!z3.value || z3Status.value !== 'success' || !project.value)
     return false;
 
@@ -66,13 +66,13 @@ async function initializeSolver() {
     solver.add(getBingoConstraint(ctx, project.value.width, project.value.height, board));
     return true;
   } catch (err) {
-    console.error('Solver initialization failed:', err);
-    error.value = String(err);
+    console.error(err);
+    showErrorToast(toast, '初始化失败', err);
     return false;
   }
 }
 
-async function fetchNextSolution(): Promise<boolean> {
+async function fetchNextSolution() {
   if (!solver || !ctx || !board || !project.value)
     return false;
 
@@ -102,8 +102,8 @@ async function fetchNextSolution(): Promise<boolean> {
       return false;
     }
   } catch (err) {
-    console.error('Error fetching next solution:', err);
-    error.value = String(err);
+    console.error(err);
+    showErrorToast(toast, '求解失败', err);
     return false;
   }
 }
@@ -118,26 +118,16 @@ async function runSolver() {
   error.value = undefined;
   allSolutionsFetched.value = false;
   solveStartTime = performance.now();
+  if (!await initSolver())
+    return;
 
-  try {
-    const initialized = await initializeSolver();
-    if (!initialized) {
-      status.value = 'error';
-      return;
-    }
+  // 确保 `allSolutionsFetched` 初始值正确
+  await fetchNextSolution();
+  await fetchNextSolution();
 
-    // Ensure `allSolutionsFetched` is accurate initially
-    await fetchNextSolution();
-    await fetchNextSolution();
-
-    displayIndex.value = Math.max(0, solutions.value.length - 2);
-    timeUsed.value = Math.round(performance.now() - solveStartTime) / 1000;
-    status.value = solutions.value.length > 0 ? 'has-solution' : 'no-solution';
-  } catch (err) {
-    console.error('Error in runSolver:', err);
-    error.value = String(err);
-    status.value = 'error';
-  }
+  displayIndex.value = Math.max(0, solutions.value.length - 2);
+  timeUsed.value = Math.round(performance.now() - solveStartTime) / 1000;
+  status.value = solutions.value.length > 0 ? 'has-solution' : 'no-solution';
 }
 
 async function handleNextClick() {
@@ -161,16 +151,11 @@ async function handleNextClick() {
         status.value = 'has-solution';
       }
     } catch (err) {
-      console.error('Error fetching next solution:', err);
-      error.value = String(err);
-      status.value = 'error';
+      console.error(err);
+      showErrorToast(toast, '求解失败', err);
     }
   }
 }
-
-const displayedSolution = computed(() => {
-  return solutions.value[displayIndex.value];
-});
 </script>
 
 <template>
@@ -178,7 +163,7 @@ const displayedSolution = computed(() => {
     <ProjectUploader v-if="!project" />
 
     <template v-else>
-      <ProjectInfo :project="project" @reset="resetProject" />
+      <ProjectInfo :project @reset="resetProject" />
 
       <div class="flex flex-col items-center justify-center gap-4 mt-8">
         <UButton
@@ -214,15 +199,6 @@ const displayedSolution = computed(() => {
         </UFieldGroup>
       </div>
 
-      <UAlert
-        v-if="status === 'error' && error"
-        icon="lucide:circle-alert"
-        title="错误"
-        :description="error"
-        color="error"
-        variant="soft"
-      />
-
       <UEmpty
         v-if="status === 'no-solution'"
         class="w-100 mx-auto"
@@ -242,7 +218,7 @@ const displayedSolution = computed(() => {
                 class="grid gap-0.5 bg-gray-200 dark:bg-gray-800 p-0.5 rounded"
                 :style="{ gridTemplateColumns: `repeat(${project?.width || 5}, minmax(0, 1fr))` }"
               >
-                <template v-for="(row, r) in displayedSolution" :key="r">
+                <template v-for="(row, r) in solutions[displayIndex]" :key="r">
                   <div
                     v-for="(cell, c) in row"
                     :key="`${r}-${c}`"
