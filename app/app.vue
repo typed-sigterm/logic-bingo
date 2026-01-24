@@ -4,6 +4,7 @@ import type { NavigationMenuItem } from '@nuxt/ui';
 const HeaderItems: NavigationMenuItem[] = [
   { label: '求解', icon: 'lucide:play', to: '/solve' },
   { label: '验证', icon: 'lucide:grid-2x2-check', to: '/verify' },
+  { label: '设计', icon: 'lucide:pencil-ruler', to: '/design' },
 ];
 </script>
 
@@ -35,7 +36,7 @@ const HeaderItems: NavigationMenuItem[] = [
       </template>
     </UHeader>
 
-    <UMain>
+    <UMain class="flex flex-col">
       <NuxtPage />
     </UMain>
   </UApp>
