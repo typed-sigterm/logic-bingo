@@ -2,7 +2,7 @@
   <UEmpty
     class="w-100 m-auto"
     title="Work In Progress"
-    description="功能正在开发中（其实是画饼）"
+    description="等待社区贡献中……"
     icon="lucide:flask-conical"
     size="xl"
     :actions="[{
